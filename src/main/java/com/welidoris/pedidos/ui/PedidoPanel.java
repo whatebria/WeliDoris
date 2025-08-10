@@ -129,16 +129,24 @@ public class PedidoPanel extends JPanel {
     }
     
     public void agregarProducto(int menuItemId, MenuItem item, String tamano, int cantidad) {
-        String clave = menuItemId + " (" + tamano + ")"; 
-        if (itemsEnPedido.containsKey(clave)) {
-            PedidoItem itemExistente = itemsEnPedido.get(clave);
-            itemExistente.setCantidad(itemExistente.getCantidad() + cantidad);
-        } else {
+        String clave = menuItemId + " (" + tamano + ")";
+        
+        // Verifica si el mapa de precios no es nulo antes de acceder a el
+        if (item.getPrecios() != null) {
             double precio = item.getPrecios().get(tamano);
-            PedidoItem nuevoItem = new PedidoItem(menuItemId, item.getNombre(), tamano, precio, cantidad);
-            itemsEnPedido.put(clave, nuevoItem);
+            
+            if (itemsEnPedido.containsKey(clave)) {
+                PedidoItem itemExistente = itemsEnPedido.get(clave);
+                itemExistente.setCantidad(itemExistente.getCantidad() + cantidad);
+            } else {
+                PedidoItem nuevoItem = new PedidoItem(menuItemId, item.getNombre(), tamano, precio, cantidad);
+                itemsEnPedido.put(clave, nuevoItem);
+            }
+            actualizarPedido();
+        } else {
+            // Muestra un mensaje de error si el precio no se pudo obtener
+            JOptionPane.showMessageDialog(this, "Error: No se pudo obtener el precio del producto.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-        actualizarPedido();
     }
     
     private double calcularTotal() {
@@ -160,6 +168,7 @@ public class PedidoPanel extends JPanel {
         }
         
         totalLabel.setText(String.format("Total: $%.2f", total));
+        System.out.println("Pedido actualizado. Total de items: " + itemsEnPedido.size());
     }
     
     public void guardarPedidoCompleto() {

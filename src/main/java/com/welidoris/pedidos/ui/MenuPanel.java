@@ -1,111 +1,52 @@
 package com.welidoris.pedidos.ui;
 
+import com.welidoris.pedidos.db.DatabaseManager;
 import com.welidoris.pedidos.models.MenuItem;
-import com.welidoris.pedidos.models.Producto;
-import com.welidoris.pedidos.models.Promocion;
+
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.net.URL;
+import java.sql.SQLException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MenuPanel extends JPanel {
-    private List<MenuItem> productos;
+
+    private static final Logger LOGGER = Logger.getLogger(MenuPanel.class.getName());
     private PedidoPanel pedidoPanel;
-    private int maxColumns;
-    private int nextId = 1;
+    private List<MenuItem> productos;
+    private int maxColumns = 2; // Valor por defecto
+    private final NumberFormat currencyFormatter;
 
     public MenuPanel(PedidoPanel pedidoPanel) {
         this.pedidoPanel = pedidoPanel;
-        
+        // Se configura el formato de moneda para Chile.
+        this.currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "CL"));
+
+        // Se inicializa la lista de productos para evitar errores si la base de datos falla
+        productos = new ArrayList<>();
+
+        // Se carga la lista de productos dentro de un bloque try-catch en el constructor
+        try {
+            productos = DatabaseManager.getMenuItems();
+            System.out.println("Se cargaron correctamente los productos desde la base de datos.");
+        } catch (SQLException e) {
+            System.out.println("Error al cargar los productos desde la base de datos.");
+            LOGGER.log(Level.SEVERE, "Error al cargar los productos desde la base de datos.", e);
+            JOptionPane.showMessageDialog(null, "Error al conectar con la base de datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
         setLayout(new GridBagLayout());
 
-        productos = new ArrayList<>();
-        
-        Producto salchipapas = new Producto(nextId++, "Salchipapas", true);
-        salchipapas.agregarPrecio("Chica", 1500.0);
-        salchipapas.agregarPrecio("Mediana", 2500.0);
-        salchipapas.agregarPrecio("Grande", 3500.0);
-        salchipapas.setImagen("salchipapas.jpeg");
-        
-        Producto completo = new Producto(nextId++, "Completo", true);
-        completo.agregarPrecio("Chico", 1600.0);
-        completo.agregarPrecio("Grande", 2300.0);
-        completo.setImagen("completo.jpeg");
-        
-        Producto completoItaliano = new Producto(nextId++, "Completo Italiano", true);
-        completoItaliano.agregarPrecio("Chico", 1800.0);
-        completoItaliano.agregarPrecio("Grande", 2500.0);
-        completoItaliano.setImagen("completoItaliano.jpeg");
-        
-        Producto completoDinamico = new Producto(nextId++, "Completo Dinamico", true);
-        completoDinamico.agregarPrecio("Chico", 2000.0);
-        completoDinamico.agregarPrecio("Grande", 2700.0);
-        completoDinamico.setImagen("completoDinamico.jpg");
-
-        Producto assQueso = new Producto(nextId++, "Ass Queso", true);
-        assQueso.agregarPrecio("Chico", 2500.0);
-        assQueso.agregarPrecio("Grande", 3200.0);
-        assQueso.setImagen("assQueso.jpg");
-        
-        Producto assItaliano = new Producto(nextId++, "Ass Italiano", true);
-        assItaliano.agregarPrecio("Chico", 2800.0);
-        assItaliano.agregarPrecio("Grande", 3500.0);
-        assItaliano.setImagen("assitaliano.jpg");
-        
-        Producto assDinamico = new Producto(nextId++, "Ass Dinamico", true);
-        assDinamico.agregarPrecio("Chico", 3000.0);
-        assDinamico.agregarPrecio("Grande", 3700.0);
-        assDinamico.setImagen("assdinamico.png");
-        
-        Producto papasFritas = new Producto(nextId++, "Papas Fritas", true);
-        papasFritas.agregarPrecio("Chica", 1000.0);
-        papasFritas.agregarPrecio("Mediana", 2000.0);
-        papasFritas.agregarPrecio("Grande", 3000.0);
-        papasFritas.setImagen("papasfritas.png");
-        
-        Producto churrasco = new Producto(nextId++, "Churrasco", false);
-        churrasco.agregarPrecio("unico", 3500.0);
-        churrasco.setImagen("churrasco.jpg");
-        
-        Producto churrascoItaliano = new Producto(nextId++, "Churrasco Italiano", false);
-        churrascoItaliano.agregarPrecio("unico", 3500.0);
-        churrascoItaliano.setImagen("churrascoitaliano.jpeg");
-        
-        Producto chacarero = new Producto(nextId++, "Chacarero", false);
-        chacarero.agregarPrecio("unico", 4000.0);
-        chacarero.setImagen("chacarero.jpg");
-
-        Promocion promoChurrasco = new Promocion(nextId++, "Promoción Churrasco (2x)", 6000.0);
-        promoChurrasco.setImagen("promocionchurrasco.jpeg");
-        
-        Promocion promoChurrascoItaliano = new Promocion(nextId++, "Promoción Churrasco Italiano 2x", 6000.0);
-        promoChurrascoItaliano.setImagen("promocionchurrascoitaliano.jpeg");
-        
-        Promocion promoChacarero = new Promocion(nextId++, "Promoción Chacarero 2x", 7000.0);
-        promoChacarero.setImagen("promocionchacarero.jpg");
-        
-        Promocion promoChurrascoMasPapas = new Promocion(nextId++, "Promoción Churrasco + Papas", 5000.0);
-        promoChurrascoMasPapas.setImagen("promocionchurrascopapas.jpeg");
-
-        productos.add(salchipapas);
-        productos.add(completo);
-        productos.add(completoItaliano);
-        productos.add(completoDinamico);
-        productos.add(assItaliano);
-        productos.add(assDinamico);
-        productos.add(assQueso);
-        productos.add(papasFritas);
-        productos.add(churrascoItaliano);
-        productos.add(chacarero);
-        productos.add(promoChurrasco);
-        productos.add(promoChurrascoItaliano);
-        productos.add(promoChacarero);
-        productos.add(promoChurrascoMasPapas);
-
+        // Listener para redimensionar la ventana y ajustar las columnas
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -120,9 +61,10 @@ public class MenuPanel extends JPanel {
             }
         });
 
+        // Se dibuja el menú inicial
         dibujarMenu();
     }
-    
+
     private void dibujarMenu() {
         removeAll();
         revalidate();
@@ -135,6 +77,8 @@ public class MenuPanel extends JPanel {
         int row = 0;
         
         for (MenuItem p : productos) {
+            System.out.println("Producto: " + p.getNombre());
+
             JPanel productCard = new JPanel();
             productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));
 
@@ -175,14 +119,23 @@ public class MenuPanel extends JPanel {
             JComboBox<String> tamanoCombo = new JComboBox<>();
             tamanoCombo.setPreferredSize(new Dimension(100, 50));
             
-            if (p.tieneTamanos()) {
-                for (String tamano : p.getPrecios().keySet()) {
+            // Verificamos si el mapa de precios es null antes de usarlo
+            Map<String, Double> precios = p.getPrecios();
+            if (precios != null && p.tieneTamanos()) {
+                for (String tamano : precios.keySet()) {
                     tamanoCombo.addItem(tamano);
                 }
+            } else if (precios != null) {
+                // Si no tiene tamaños pero sí precios, se agrega el precio único
+                 for (String tamano : precios.keySet()) {
+                    tamanoCombo.addItem(tamano);
+                }
+                tamanoCombo.setEnabled(false);
             } else {
-                tamanoCombo.addItem("Único");
+                tamanoCombo.addItem("Error");
                 tamanoCombo.setEnabled(false);
             }
+            
             gbcOpciones.gridx = 0;
             gbcOpciones.gridy = 0;
             gbcOpciones.fill = GridBagConstraints.HORIZONTAL;
@@ -198,19 +151,23 @@ public class MenuPanel extends JPanel {
             gbcOpciones.gridx = 2;
             gbcOpciones.gridy = 0;
             opcionesPanel.add(cantidadSpinner, gbcOpciones);
-
-            JButton agregarBtn = new JButton("Agregar");
             
+            JButton agregarBtn = new JButton("Agregar");
             agregarBtn.setPreferredSize(new Dimension(120, 50));
             agregarBtn.addActionListener(e -> {
                 int cantidad = (Integer) cantidadSpinner.getValue();
                 String tamano = (String) tamanoCombo.getSelectedItem();
-                if (cantidad > 0) {
+                
+                // Muestra un mensaje si el combo box indica un error
+                if ("Error".equals(tamano)) {
+                    JOptionPane.showMessageDialog(null, "Error: No se pudo obtener el precio del producto.", "Error", JOptionPane.ERROR_MESSAGE);
+                } else if (cantidad > 0) {
+                    // Llama al método agregarProducto en PedidoPanel, pasando el objeto MenuItem completo
                     pedidoPanel.agregarProducto(p.getId(), p, tamano, cantidad);
-                    
                     cantidadSpinner.setValue(0);
                 }
             });
+            
             gbcOpciones.gridx = 3;
             gbcOpciones.gridy = 0;
             opcionesPanel.add(agregarBtn, gbcOpciones);
@@ -227,8 +184,6 @@ public class MenuPanel extends JPanel {
                 row++;
             }
         }
-        
-        revalidate();
         repaint();
     }
 }

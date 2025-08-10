@@ -10,7 +10,7 @@ public class Pedido {
     private String metodoPago;
     private double total;
 
-    public Pedido(int id, Date fecha, String nombreCliente, boolean pagado, String metodoPago, double total) {
+    public Pedido(int id, Date fecha, String nombreCliente, boolean pagado, String metodoPago, double total, String guardado) {
         this.id = id;
         this.fecha = fecha;
         this.nombreCliente = nombreCliente;

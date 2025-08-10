@@ -54,7 +54,6 @@ public class PedidosCompletadosPanel extends JPanel {
 
             while (rsPedidos.next()) {
                 int pedidoId = rsPedidos.getInt("id");
-                Date fecha = rsPedidos.getTimestamp("fecha");
                 String nombreCliente = rsPedidos.getString("nombre_cliente");
                 String metodoPago = rsPedidos.getString("metodo_pago");
                 
@@ -63,19 +62,17 @@ public class PedidosCompletadosPanel extends JPanel {
                 TitledBorder border = BorderFactory.createTitledBorder("Pedido #" + pedidoId + " - " + nombreCliente);
                 pedidoPanel.setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(5, 5, 5, 5)));
                 
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                 
                 JTextArea detallesArea = new JTextArea();
                 detallesArea.setEditable(false);
-                detallesArea.append("Fecha: " + sdf.format(fecha) + "\n");
                 detallesArea.append("Método de pago: " + metodoPago + "\n");
                 
-                String sqlItems = "SELECT nombre_producto, cantidad, tamano FROM pedido_items WHERE pedido_id = ?;";
+                String sqlItems = "SELECT menu_item_id, cantidad, tamano FROM pedidos_items WHERE pedido_id = ?;";
                 try (PreparedStatement pstmtItems = conn.prepareStatement(sqlItems)) {
                     pstmtItems.setInt(1, pedidoId);
                     try (ResultSet rsItems = pstmtItems.executeQuery()) {
                         while (rsItems.next()) {
-                            String nombreProducto = rsItems.getString("nombre_producto");
+                            String nombreProducto = rsItems.getString("menu_item_id");
                             int cantidad = rsItems.getInt("cantidad");
                             String tamano = rsItems.getString("tamano");
                             detallesArea.append("  - Producto: " + nombreProducto + " (" + tamano + "), Cantidad: " + cantidad + "\n");
