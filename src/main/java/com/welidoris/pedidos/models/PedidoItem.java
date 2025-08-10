@@ -1,8 +1,12 @@
 package com.welidoris.pedidos.models;
 
+/**
+ * Clase que representa un item individual en un pedido.
+ * Incluye informacion del producto, su tamano, precio y la cantidad.
+ */
 public class PedidoItem {
-    // Los campos deben ser privados para encapsulamiento
-    private int menuItemId; // Nuevo campo para el ID del item del menu
+
+    private int menuItemId;
     private String nombre;
     private String tamano;
     private double precioUnitario;
@@ -16,21 +20,37 @@ public class PedidoItem {
         this.cantidad = cantidad;
     }
 
-    // Métodos getter para acceder a los campos
+    // Getters y Setters
     public int getMenuItemId() {
         return menuItemId;
     }
-    
+
+    public void setMenuItemId(int menuItemId) {
+        this.menuItemId = menuItemId;
+    }
+
     public String getNombre() {
         return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 
     public String getTamano() {
         return tamano;
     }
 
+    public void setTamano(String tamano) {
+        this.tamano = tamano;
+    }
+
     public double getPrecioUnitario() {
         return precioUnitario;
+    }
+
+    public void setPrecioUnitario(double precioUnitario) {
+        this.precioUnitario = precioUnitario;
     }
 
     public int getCantidad() {
@@ -39,5 +59,13 @@ public class PedidoItem {
 
     public void setCantidad(int cantidad) {
         this.cantidad = cantidad;
+    }
+
+    /**
+     * Calcula y retorna el precio total (subtotal) para este item del pedido.
+     * @return El precio unitario multiplicado por la cantidad.
+     */
+    public double getPrecioTotal() {
+        return precioUnitario * cantidad;
     }
 }

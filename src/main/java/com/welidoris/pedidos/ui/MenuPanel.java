@@ -23,7 +23,7 @@ public class MenuPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(MenuPanel.class.getName());
     private PedidoPanel pedidoPanel;
     private List<MenuItem> productos;
-    private int maxColumns = 2; // Valor por defecto
+    private int maxColumns = 3; // Valor por defecto
     private final NumberFormat currencyFormatter;
 
     public MenuPanel(PedidoPanel pedidoPanel) {
@@ -77,7 +77,6 @@ public class MenuPanel extends JPanel {
         int row = 0;
         
         for (MenuItem p : productos) {
-            System.out.println("Producto: " + p.getNombre());
 
             JPanel productCard = new JPanel();
             productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));

@@ -2,57 +2,51 @@ package com.welidoris.pedidos.ui;
 
 import com.welidoris.pedidos.db.DatabaseManager;
 import com.welidoris.pedidos.models.MenuItem;
-import com.welidoris.pedidos.models.PedidoItem; 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import com.welidoris.pedidos.models.PedidoItem;
+
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 public class PedidoPanel extends JPanel {
-    private JTextArea areaPedido;
+
+    private Map<String, PedidoItem> itemsEnPedido;
+    private JPanel listaPanel;
     private JLabel totalLabel;
-    
-    private Map<String, PedidoItem> itemsEnPedido; 
-    
+    private final NumberFormat currencyFormatter;
+
     private JTextField nombreClienteField;
     private JCheckBox pagadoCheckBox;
     private JComboBox<String> metodoPagoCombo;
-    
     private JButton limpiarBtn;
     private JButton guardarBtn;
 
     public PedidoPanel() {
+        // Se configura el formato de moneda para Chile.
+        this.currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "CL"));
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Tu Pedido"));
-        
+
         itemsEnPedido = new LinkedHashMap<>();
 
-        areaPedido = new JTextArea(10, 30);
-        areaPedido.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(areaPedido);
+        // Usamos un JPanel con BoxLayout para poder agregar botones de eliminar
+        listaPanel = new JPanel();
+        listaPanel.setLayout(new BoxLayout(listaPanel, BoxLayout.Y_AXIS));
+        
+        // Se anade un JScrollPane para que el contenido sea desplazable
+        JScrollPane scrollPane = new JScrollPane(listaPanel);
+        scrollPane.setPreferredSize(new Dimension(350, 300));
         add(scrollPane, BorderLayout.CENTER);
-
+        
         JPanel pedidoControls = new JPanel();
         pedidoControls.setLayout(new BoxLayout(pedidoControls, BoxLayout.Y_AXIS));
         pedidoControls.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
+        // Panel para el nombre del cliente
         JPanel clientePanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -65,7 +59,8 @@ public class PedidoPanel extends JPanel {
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         nombreClienteField = new JTextField(20);
         clientePanel.add(nombreClienteField, gbc);
-
+        
+        // Panel para las opciones de pago
         JPanel pagoPanel = new JPanel(new GridBagLayout());
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -93,9 +88,10 @@ public class PedidoPanel extends JPanel {
         });
         pagoPanel.add(pagadoCheckBox, gbc);
         
-        JPanel southPanel = new JPanel(new BorderLayout());
+        // Panel para total y botones de accion
+        JPanel footerPanel = new JPanel(new BorderLayout());
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        totalLabel = new JLabel("Total: $0.0");
+        totalLabel = new JLabel("Total: " + currencyFormatter.format(0));
         totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
         limpiarBtn = new JButton("Limpiar");
         limpiarBtn.addActionListener(e -> {
@@ -116,14 +112,14 @@ public class PedidoPanel extends JPanel {
         });
         rightPanel.add(guardarBtn);
 
-        southPanel.add(leftPanel, BorderLayout.WEST);
-        southPanel.add(rightPanel, BorderLayout.EAST);
+        footerPanel.add(leftPanel, BorderLayout.WEST);
+        footerPanel.add(rightPanel, BorderLayout.EAST);
         
         pedidoControls.add(clientePanel);
         pedidoControls.add(Box.createVerticalStrut(10));
         pedidoControls.add(pagoPanel);
         pedidoControls.add(Box.createVerticalStrut(10));
-        pedidoControls.add(southPanel);
+        pedidoControls.add(footerPanel);
 
         add(pedidoControls, BorderLayout.SOUTH);
     }
@@ -131,8 +127,7 @@ public class PedidoPanel extends JPanel {
     public void agregarProducto(int menuItemId, MenuItem item, String tamano, int cantidad) {
         String clave = menuItemId + " (" + tamano + ")";
         
-        // Verifica si el mapa de precios no es nulo antes de acceder a el
-        if (item.getPrecios() != null) {
+        if (item.getPrecios() != null && item.getPrecios().containsKey(tamano)) {
             double precio = item.getPrecios().get(tamano);
             
             if (itemsEnPedido.containsKey(clave)) {
@@ -144,31 +139,63 @@ public class PedidoPanel extends JPanel {
             }
             actualizarPedido();
         } else {
-            // Muestra un mensaje de error si el precio no se pudo obtener
             JOptionPane.showMessageDialog(this, "Error: No se pudo obtener el precio del producto.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    private double calcularTotal() {
-        double total = 0.0;
-        for (PedidoItem item : itemsEnPedido.values()) {
-            total += item.getPrecioUnitario() * item.getCantidad();
-        }
-        return total;
+    private void eliminarProducto(String clave) {
+        itemsEnPedido.remove(clave);
+        actualizarPedido();
     }
 
     void actualizarPedido() {
-        areaPedido.setText("");
-        double total = calcularTotal();
+        listaPanel.removeAll();
+        double total = 0.0;
         
-        for (PedidoItem item : itemsEnPedido.values()) {
-            double subtotal = item.getPrecioUnitario() * item.getCantidad();
-            areaPedido.append(String.format("%s (%s) x %d  -> $%.2f\n",
-                    item.getNombre(), item.getTamano(), item.getCantidad(), subtotal));
+        for (Map.Entry<String, PedidoItem> entry : itemsEnPedido.entrySet()) {
+            String clave = entry.getKey();
+            PedidoItem item = entry.getValue();
+            
+            total += item.getPrecioTotal();
+            
+            // Panel para cada item con un boton de eliminar
+            JPanel itemPanel = new JPanel(new BorderLayout());
+            itemPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            
+            // Establecer un tamaño máximo para que el panel no se estire horizontalmente
+            itemPanel.setMaximumSize(new Dimension(400, 40));
+            // Alinear el panel a la izquierda del BoxLayout
+            itemPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            
+            // Texto del item
+            String itemText = String.format("<html>%s (%s) x %d - <b>%s</b></html>",
+                item.getNombre(),
+                item.getTamano(),
+                item.getCantidad(),
+                currencyFormatter.format(item.getPrecioTotal()));
+            
+            JLabel itemLabel = new JLabel(itemText);
+            itemLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+            
+            // Boton de eliminar
+            JButton deleteBtn = new JButton("X");
+            deleteBtn.setForeground(Color.RED);
+            deleteBtn.setMargin(new Insets(2, 5, 2, 5));
+            deleteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            deleteBtn.setPreferredSize(new Dimension(30, 25));
+            deleteBtn.addActionListener(e -> eliminarProducto(clave));
+            
+            itemPanel.add(itemLabel, BorderLayout.CENTER);
+            itemPanel.add(deleteBtn, BorderLayout.EAST);
+            
+            listaPanel.add(itemPanel);
+            listaPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         }
         
-        totalLabel.setText(String.format("Total: $%.2f", total));
-        System.out.println("Pedido actualizado. Total de items: " + itemsEnPedido.size());
+        totalLabel.setText("Total: " + currencyFormatter.format(total));
+        
+        listaPanel.revalidate();
+        listaPanel.repaint();
     }
     
     public void guardarPedidoCompleto() {
@@ -189,25 +216,37 @@ public class PedidoPanel extends JPanel {
         }
         
         boolean pagado = pagadoCheckBox.isSelected();
-        int nuevoPedidoId = DatabaseManager.saveNewPedido(nombreCliente, pagado, metodoPago);
         
-        if (nuevoPedidoId != -1) {
-            double totalPedido = calcularTotal();
-            for (PedidoItem item : itemsEnPedido.values()) {
-                DatabaseManager.savePedidoItem(nuevoPedidoId, item.getMenuItemId(), item.getCantidad(), item.getTamano());
+        try {
+            int nuevoPedidoId = DatabaseManager.saveNewPedido(nombreCliente, pagado, metodoPago);
+            
+            if (nuevoPedidoId != -1) {
+                double totalPedido = calcularTotal();
+                for (PedidoItem item : itemsEnPedido.values()) {
+                    DatabaseManager.savePedidoItem(nuevoPedidoId, item.getMenuItemId(), item.getCantidad(), item.getTamano());
+                }
+                DatabaseManager.updatePedidoTotal(nuevoPedidoId, totalPedido);
+                
+                itemsEnPedido.clear();
+                actualizarPedido();
+                nombreClienteField.setText("");
+                pagadoCheckBox.setSelected(false);
+                metodoPagoCombo.setSelectedIndex(0);
+                
+                JOptionPane.showMessageDialog(this, "El pedido de " + nombreCliente + " se ha guardado correctamente.", "Pedido Guardado", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al guardar el pedido. No se pudo crear un ID de pedido.", "Error", JOptionPane.ERROR_MESSAGE);
             }
-            DatabaseManager.updatePedidoTotal(nuevoPedidoId, totalPedido);
-            
-            itemsEnPedido.clear();
-            actualizarPedido();
-            nombreClienteField.setText("");
-            pagadoCheckBox.setSelected(false);
-            metodoPagoCombo.setSelectedIndex(0);
-            
-            JOptionPane.showMessageDialog(this, "El pedido de " + nombreCliente + " se ha guardado correctamente.", "Pedido Guardado", JOptionPane.INFORMATION_MESSAGE);
-            
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al guardar el pedido. No se pudo crear un ID de pedido.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+             JOptionPane.showMessageDialog(this, "Error al guardar el pedido: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+    
+    private double calcularTotal() {
+        double total = 0.0;
+        for (PedidoItem item : itemsEnPedido.values()) {
+            total += item.getPrecioTotal();
+        }
+        return total;
     }
 }

@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PedidosGuardadosPanel extends JPanel {
+public final class PedidosGuardadosPanel extends JPanel {
     
     private static final Logger LOGGER = Logger.getLogger(PedidosGuardadosPanel.class.getName());
     private JScrollPane scrollPane;
