@@ -37,19 +37,15 @@ public final class PedidosGuardadosPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         add(scrollPane, BorderLayout.CENTER);
 
-        JPanel botonPanel = new JPanel();
-        botonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        
-        JButton refreshBtn = new JButton("Actualizar Pedidos");
-        refreshBtn.addActionListener(e -> cargarPedidos());
-        refreshBtn.setPreferredSize(new Dimension(200, 40));
-        
-        botonPanel.add(refreshBtn);
-        add(botonPanel, BorderLayout.SOUTH);
+        // El boton de actualizar se ha eliminado para que la carga sea automatica
         
         cargarPedidos();
     }
     
+    /**
+     * Carga y muestra todos los pedidos que no han sido marcados como completados.
+     * Este metodo se puede llamar desde otro panel para forzar una actualizacion.
+     */
     public void cargarPedidos() {
         mainPanel.removeAll();
         mainPanel.revalidate();
@@ -79,23 +75,37 @@ public final class PedidosGuardadosPanel extends JPanel {
                             List<Map<String, Object>> items = (List<Map<String, Object>>) pedido.get("items");
                             
                             JPanel pedidoPanel = new JPanel();
-                            pedidoPanel.setLayout(new BorderLayout());
-                            TitledBorder border = BorderFactory.createTitledBorder("Pedido #" + pedidoId + " - " + nombreCliente + " - " + currencyFormatter.format(total));
-                            pedidoPanel.setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+                            // Se establece un tamaño fijo para cada panel de pedido
+                            pedidoPanel.setPreferredSize(new Dimension(1100, 250));
+                            pedidoPanel.setMaximumSize(new Dimension(1500, 250));
+                            pedidoPanel.setMinimumSize(new Dimension(900, 250));
                             
-                            JTextArea detallesArea = new JTextArea();
-                            detallesArea.setEditable(false);
+                            pedidoPanel.setLayout(new GridBagLayout());
                             
-                            for (Map<String, Object> item : items) {
-                                String nombreProducto = (String) item.get("nombre_producto");
-                                int cantidad = (int) item.get("cantidad");
-                                String tamano = (String) item.get("tamano");
-                                detallesArea.append("  - Producto: " + nombreProducto + " (" + tamano + "), Cantidad: " + cantidad + "\n");
-                            }
+                            TitledBorder titledBorder = BorderFactory.createTitledBorder("Pedido #" + pedidoId + " - Cliente: " + nombreCliente);
+                            titledBorder.setTitleFont(new Font("Arial", Font.BOLD, 16));
+                            pedidoPanel.setBorder(BorderFactory.createCompoundBorder(
+                                titledBorder,
+                                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                            ));
+                            
+                            GridBagConstraints gbc = new GridBagConstraints();
+                            gbc.insets = new Insets(5, 5, 5, 5);
+                            gbc.anchor = GridBagConstraints.WEST;
+                            gbc.fill = GridBagConstraints.HORIZONTAL;
+                            
+                            JLabel totalLabel = new JLabel("<html><b>Total: " + currencyFormatter.format(total) + "</b></html>");
+                            totalLabel.setFont(new Font("Arial", Font.BOLD, 14));
+                            gbc.gridx = 0;
+                            gbc.gridy = 0;
+                            gbc.weightx = 1.0;
+                            pedidoPanel.add(totalLabel, gbc);
 
+                            // Panel de estados y método de pago
+                            JPanel estadoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
                             JCheckBox pagadoCheckBox = new JCheckBox("Pagado", pagado);
                             JCheckBox completadoCheckBox = new JCheckBox("Completado", completado);
-
+                            
                             pagadoCheckBox.setEnabled(!pagado);
                             pagadoCheckBox.addActionListener(e -> {
                                 if (pagadoCheckBox.isSelected()) {
@@ -103,7 +113,6 @@ public final class PedidosGuardadosPanel extends JPanel {
                                         DatabaseManager.updateEstadoPago(pedidoId, true);
                                         pagadoCheckBox.setEnabled(false);
                                         JOptionPane.showMessageDialog(PedidosGuardadosPanel.this, "El pedido #" + pedidoId + " ha sido marcado como pagado.", "Pago Confirmado", JOptionPane.INFORMATION_MESSAGE);
-                                        // Refrescar el estado de los checkboxes
                                         completadoCheckBox.setEnabled(true);
                                     } catch (SQLException ex) {
                                         LOGGER.log(Level.SEVERE, "Error al actualizar el estado de pago del pedido.", ex);
@@ -112,15 +121,15 @@ public final class PedidosGuardadosPanel extends JPanel {
                                 }
                             });
 
-                            completadoCheckBox.setEnabled(pagado && !completado); // Solo se puede completar si ya está pagado
+                            completadoCheckBox.setEnabled(pagado && !completado); // Solo se puede completar si ya esta pagado
                             completadoCheckBox.addActionListener(e -> {
                                 if (completadoCheckBox.isSelected()) {
                                     try {
                                         DatabaseManager.updateEstadoCompletado(pedidoId, true);
                                         completadoCheckBox.setEnabled(false);
                                         cargarPedidos(); // Refresca este panel para que el pedido desaparezca
-                                        pedidosCompletadosPanel.cargarPedidos(); // Refresca el otro panel
-                                        tabbedPane.setSelectedIndex(tabbedPane.indexOfTab("Pedidos Completados")); // Mover a la pestaña
+                                        pedidosCompletadosPanel.cargarPedidos("Todos"); // Refresca el otro panel
+                                        tabbedPane.setSelectedIndex(tabbedPane.indexOfTab("Pedidos Completados")); // Mover a la pestana
                                         
                                         JOptionPane.showMessageDialog(PedidosGuardadosPanel.this, "El pedido #" + pedidoId + " ha sido marcado como completado y entregado.", "Pedido Completado", JOptionPane.INFORMATION_MESSAGE);
                                     } catch (SQLException ex) {
@@ -139,22 +148,45 @@ public final class PedidosGuardadosPanel extends JPanel {
                                     try {
                                         DatabaseManager.updateMetodoPago(pedidoId, nuevoMetodo);
                                         metodoPagoCombo.setEnabled(false);
-                                        JOptionPane.showMessageDialog(PedidosGuardadosPanel.this, "El método de pago para el pedido #" + pedidoId + " ha sido actualizado a: " + nuevoMetodo, "Método de Pago Actualizado", JOptionPane.INFORMATION_MESSAGE);
                                     } catch (SQLException ex) {
                                         LOGGER.log(Level.SEVERE, "Error al actualizar el método de pago del pedido.", ex);
                                         JOptionPane.showMessageDialog(PedidosGuardadosPanel.this, "Error al actualizar el método de pago: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
                                     }
                                 }
                             });
-
-                            JPanel estadoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                            
                             estadoPanel.add(pagadoCheckBox);
                             estadoPanel.add(completadoCheckBox);
                             estadoPanel.add(new JLabel("Método:"));
                             estadoPanel.add(metodoPagoCombo);
+                            
+                            gbc.gridx = 1;
+                            gbc.gridy = 0;
+                            gbc.weightx = 0.0;
+                            pedidoPanel.add(estadoPanel, gbc);
+                            
+                            // Lista para mostrar los productos
+                            DefaultListModel<String> productosListModel = new DefaultListModel<>();
+                            for (Map<String, Object> item : items) {
+                                String nombreProducto = (String) item.get("nombre_producto");
+                                int cantidad = (int) item.get("cantidad");
+                                String tamano = (String) item.get("tamano");
+                                productosListModel.addElement(" - " + nombreProducto + " (" + tamano + ") x " + cantidad);
+                            }
+                            
+                            JList<String> productosList = new JList<>(productosListModel);
+                            productosList.setFont(new Font("Monospaced", Font.PLAIN, 12));
+                            JScrollPane productosScrollPane = new JScrollPane(productosList);
 
-                            pedidoPanel.add(detallesArea, BorderLayout.CENTER);
-                            pedidoPanel.add(estadoPanel, BorderLayout.SOUTH);
+                            productosScrollPane.setPreferredSize(new Dimension(300, 100));
+
+                            gbc.gridx = 0;
+                            gbc.gridy = 1;
+                            gbc.gridwidth = 2; // Ocupa ambas columnas
+                            gbc.fill = GridBagConstraints.BOTH;
+                            gbc.weightx = 1.0;
+                            gbc.weighty = 1.0;
+                            pedidoPanel.add(productosScrollPane, gbc);
                             
                             mainPanel.add(pedidoPanel);
                             mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));

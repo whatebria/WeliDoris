@@ -14,16 +14,16 @@ public class MainFrame extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout(10, 10));
 
-        // Paneles principales
-        PedidoPanel pedidoPanel = new PedidoPanel();
-        MenuPanel menuPanel = new MenuPanel(pedidoPanel);
-        
         // Instanciamos el nuevo panel de pedidos completados
         PedidosCompletadosPanel pedidosCompletadosPanel = new PedidosCompletadosPanel();
         
         // Ahora instanciamos el panel de pedidos guardados y le pasamos las referencias
         JTabbedPane tabbedPane = new JTabbedPane();
         PedidosGuardadosPanel pedidosGuardadosPanel = new PedidosGuardadosPanel(pedidosCompletadosPanel, tabbedPane);
+        
+        PedidoPanel pedidoPanel = new PedidoPanel(pedidosGuardadosPanel);
+        MenuPanel menuPanel = new MenuPanel(pedidoPanel);
+
 
         // JScrollPane para el menú con la barra de desplazamiento
         JScrollPane menuScrollPane = new JScrollPane(menuPanel);

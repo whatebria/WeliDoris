@@ -7,12 +7,14 @@ import com.welidoris.pedidos.models.PedidoItem;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.text.NumberFormat;
 import java.util.Locale;
 
 public class PedidoPanel extends JPanel {
+    private PedidosGuardadosPanel pedidosGuardadosPanel;
 
     private Map<String, PedidoItem> itemsEnPedido;
     private JPanel listaPanel;
@@ -25,7 +27,12 @@ public class PedidoPanel extends JPanel {
     private JButton limpiarBtn;
     private JButton guardarBtn;
 
-    public PedidoPanel() {
+    /**
+     * Constructor que recibe una referencia al panel de pedidos guardados para poder notificarle las actualizaciones.
+     * @param pedidosGuardadosPanel La instancia del panel de pedidos guardados.
+     */
+    public PedidoPanel(PedidosGuardadosPanel pedidosGuardadosPanel) {
+        this.pedidosGuardadosPanel = pedidosGuardadosPanel;
         // Se configura el formato de moneda para Chile.
         this.currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "CL"));
         setLayout(new BorderLayout());
@@ -217,28 +224,27 @@ public class PedidoPanel extends JPanel {
         
         boolean pagado = pagadoCheckBox.isSelected();
         
-        try {
-            int nuevoPedidoId = DatabaseManager.saveNewPedido(nombreCliente, pagado, metodoPago);
-            
-            if (nuevoPedidoId != -1) {
-                double totalPedido = calcularTotal();
-                for (PedidoItem item : itemsEnPedido.values()) {
-                    DatabaseManager.savePedidoItem(nuevoPedidoId, item.getMenuItemId(), item.getCantidad(), item.getTamano());
-                }
-                DatabaseManager.updatePedidoTotal(nuevoPedidoId, totalPedido);
-                
-                itemsEnPedido.clear();
-                actualizarPedido();
-                nombreClienteField.setText("");
-                pagadoCheckBox.setSelected(false);
-                metodoPagoCombo.setSelectedIndex(0);
-                
-                JOptionPane.showMessageDialog(this, "El pedido de " + nombreCliente + " se ha guardado correctamente.", "Pedido Guardado", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al guardar el pedido. No se pudo crear un ID de pedido.", "Error", JOptionPane.ERROR_MESSAGE);
+        int nuevoPedidoId = DatabaseManager.saveNewPedido(nombreCliente, pagado, metodoPago);
+        if (nuevoPedidoId != -1) {
+            double totalPedido = calcularTotal();
+            for (PedidoItem item : itemsEnPedido.values()) {
+                DatabaseManager.savePedidoItem(nuevoPedidoId, item.getMenuItemId(), item.getCantidad(), item.getTamano());
             }
-        } catch (Exception e) {
-             JOptionPane.showMessageDialog(this, "Error al guardar el pedido: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            DatabaseManager.updatePedidoTotal(nuevoPedidoId, totalPedido);
+            
+            itemsEnPedido.clear();
+            actualizarPedido();
+            nombreClienteField.setText("");
+            pagadoCheckBox.setSelected(false);
+            metodoPagoCombo.setSelectedIndex(0);
+            
+            // Se verifica si la instancia no es nula antes de llamar al metodo.
+            if (pedidosGuardadosPanel != null) {
+                pedidosGuardadosPanel.cargarPedidos();
+            }
+            JOptionPane.showMessageDialog(this, "El pedido de " + nombreCliente + " se ha guardado correctamente.", "Pedido Guardado", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al guardar el pedido. No se pudo crear un ID de pedido.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
