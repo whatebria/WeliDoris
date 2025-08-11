@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class DatabaseManager {
 
     // --- Configuración de la base de datos H2 ---
-    private static final String JDBC_URL = "jdbc:h2:~/pedidos_db";
+    private static final String JDBC_URL = "jdbc:h2:file:~/db/pedidos_db";
     private static final String JDBC_USER = "sa";
     private static final String JDBC_PASSWORD = "";
     private static final Logger LOGGER = Logger.getLogger(DatabaseManager.class.getName());
@@ -43,11 +43,6 @@ public class DatabaseManager {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             
-            // Aseguramos un estado limpio eliminando las tablas si ya existen.
-            stmt.execute("DROP TABLE IF EXISTS pedidos_items;");
-            stmt.execute("DROP TABLE IF EXISTS pedidos;");
-            stmt.execute("DROP TABLE IF EXISTS precios;");
-            stmt.execute("DROP TABLE IF EXISTS menu_items;");
 
             // Tabla 1: menu_items - Ahora incluye 'imagen' y un tipo de ENUM para ser más flexible
             String createMenuItemsTable = "CREATE TABLE IF NOT EXISTS menu_items (" +

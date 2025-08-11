@@ -18,12 +18,16 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Panel que muestra el menu de productos en tarjetas.
+ * El numero de columnas se adapta al tamano de la ventana.
+ */
 public class MenuPanel extends JPanel {
 
     private static final Logger LOGGER = Logger.getLogger(MenuPanel.class.getName());
     private PedidoPanel pedidoPanel;
     private List<MenuItem> productos;
-    private int maxColumns = 3; // Valor por defecto
+    private int maxColumns = 3; // Valor por defecto para pantallas grandes
     private final NumberFormat currencyFormatter;
 
     public MenuPanel(PedidoPanel pedidoPanel) {
@@ -51,17 +55,20 @@ public class MenuPanel extends JPanel {
             @Override
             public void componentResized(ComponentEvent e) {
                 if (getWidth() > 0) {
+                    // Logica de 3 columnas
                     if (getWidth() <= 800) {
                         maxColumns = 1;
-                    } else {
+                    } else if (getWidth() > 800 && getWidth() <= 1200) {
                         maxColumns = 2;
+                    } else { // getWidth() > 1200
+                        maxColumns = 3;
                     }
                     dibujarMenu();
                 }
             }
         });
 
-        // Se dibuja el menú inicial
+        // Se dibuja el menu inicial
         dibujarMenu();
     }
 
@@ -80,23 +87,31 @@ public class MenuPanel extends JPanel {
 
             JPanel productCard = new JPanel();
             productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));
+            // Fondo claro para las tarjetas
+            productCard.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+            productCard.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            ));
 
             TitledBorder titledBorder = BorderFactory.createTitledBorder(p.getNombre());
             titledBorder.setTitleFont(new Font("SansSerif", Font.BOLD, 18));
-
+            titledBorder.setTitleColor(new Color(43, 43, 43));
             productCard.setBorder(BorderFactory.createCompoundBorder(
                 titledBorder,
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
             ));
             
-            productCard.setPreferredSize(new Dimension(480, 320));
+            // Tamano de la tarjeta ajustado para permitir 3 columnas
+            productCard.setPreferredSize(new Dimension(430, 270));
             
             URL urlImagen = getClass().getResource("/images/" + p.getImagen());
             
             if (urlImagen != null) {
                 ImageIcon originalIcon = new ImageIcon(urlImagen);
                 Image originalImage = originalIcon.getImage();
-                Image resizedImage = originalImage.getScaledInstance(200, 150, Image.SCALE_SMOOTH);
+                // Tamano de la imagen ajustado para encajar en la tarjeta mas pequena
+                Image resizedImage = originalImage.getScaledInstance(250, 150, Image.SCALE_SMOOTH);
                 
                 JLabel imagenLabel = new JLabel(new ImageIcon(resizedImage));
                 imagenLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -125,11 +140,11 @@ public class MenuPanel extends JPanel {
                     tamanoCombo.addItem(tamano);
                 }
             } else if (precios != null) {
-                // Si no tiene tamaños pero sí precios, se agrega el precio único
+                // Si no tiene tamanos pero sí precios, se agrega el precio unico
                  for (String tamano : precios.keySet()) {
-                    tamanoCombo.addItem(tamano);
-                }
-                tamanoCombo.setEnabled(false);
+                     tamanoCombo.addItem(tamano);
+                 }
+                 tamanoCombo.setEnabled(false);
             } else {
                 tamanoCombo.addItem("Error");
                 tamanoCombo.setEnabled(false);
@@ -141,6 +156,7 @@ public class MenuPanel extends JPanel {
             opcionesPanel.add(tamanoCombo, gbcOpciones);
             
             JLabel cantLabel = new JLabel("Cant:");
+            cantLabel.setForeground(new Color(43, 43, 43));
             gbcOpciones.gridx = 1;
             gbcOpciones.gridy = 0;
             opcionesPanel.add(cantLabel, gbcOpciones);
@@ -161,7 +177,7 @@ public class MenuPanel extends JPanel {
                 if ("Error".equals(tamano)) {
                     JOptionPane.showMessageDialog(null, "Error: No se pudo obtener el precio del producto.", "Error", JOptionPane.ERROR_MESSAGE);
                 } else if (cantidad > 0) {
-                    // Llama al método agregarProducto en PedidoPanel, pasando el objeto MenuItem completo
+                    // Llama al metodo agregarProducto en PedidoPanel, pasando el objeto MenuItem completo
                     pedidoPanel.agregarProducto(p.getId(), p, tamano, cantidad);
                     cantidadSpinner.setValue(0);
                 }
