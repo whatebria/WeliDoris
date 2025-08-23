@@ -96,14 +96,13 @@ public class MenuPanel extends JPanel {
 
             TitledBorder titledBorder = BorderFactory.createTitledBorder(p.getNombre());
             titledBorder.setTitleFont(new Font("SansSerif", Font.BOLD, 18));
-            titledBorder.setTitleColor(new Color(43, 43, 43));
             productCard.setBorder(BorderFactory.createCompoundBorder(
                 titledBorder,
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
             ));
             
             // Tamano de la tarjeta ajustado para permitir 3 columnas
-            productCard.setPreferredSize(new Dimension(430, 270));
+            productCard.setPreferredSize(new Dimension(430, 300));
             
             URL urlImagen = getClass().getResource("/images/" + p.getImagen());
             
@@ -126,37 +125,71 @@ public class MenuPanel extends JPanel {
             
             productCard.add(Box.createVerticalStrut(15));
             
+            // --- INICIO DE CAMBIOS SOLICITADOS ---
+            
+            // Etiqueta para mostrar el precio
+            JLabel precioLabel = new JLabel("");
+            // Se aumenta el tamaño de la fuente para que el precio sea más grande
+            precioLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+            precioLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // Centramos la etiqueta
+            
+            // Panel de opciones para el tamaño, cantidad y botón de agregar
             JPanel opcionesPanel = new JPanel(new GridBagLayout());
             GridBagConstraints gbcOpciones = new GridBagConstraints();
             gbcOpciones.insets = new Insets(5, 5, 5, 5);
 
+            // Combo Box para el tamaño
             JComboBox<String> tamanoCombo = new JComboBox<>();
             tamanoCombo.setPreferredSize(new Dimension(100, 50));
             
             // Verificamos si el mapa de precios es null antes de usarlo
             Map<String, Double> precios = p.getPrecios();
-            if (precios != null && p.tieneTamanos()) {
+            if (precios != null) {
+                // Populate the combo box with sizes and set the initial price
                 for (String tamano : precios.keySet()) {
                     tamanoCombo.addItem(tamano);
                 }
-            } else if (precios != null) {
-                // Si no tiene tamanos pero sí precios, se agrega el precio unico
-                 for (String tamano : precios.keySet()) {
-                     tamanoCombo.addItem(tamano);
-                 }
-                 tamanoCombo.setEnabled(false);
+                
+                // Si el producto tiene precios, mostramos el precio del primer tamaño
+                if (!precios.isEmpty()) {
+                    String primerTamano = (String) tamanoCombo.getSelectedItem();
+                    Double primerPrecio = precios.get(primerTamano);
+                    if (primerPrecio != null) {
+                        precioLabel.setText(currencyFormatter.format(primerPrecio));
+                    }
+                }
+                
+                // Si no tiene tamaños, deshabilitamos el combo box
+                if (!p.tieneTamanos()) {
+                    tamanoCombo.setEnabled(false);
+                }
             } else {
                 tamanoCombo.addItem("Error");
                 tamanoCombo.setEnabled(false);
+                precioLabel.setText("N/A");
             }
             
+            // Agregamos un listener al combo box para actualizar el precio
+            tamanoCombo.addActionListener(e -> {
+                String tamanoSeleccionado = (String) tamanoCombo.getSelectedItem();
+                if (tamanoSeleccionado != null && precios != null) {
+                    Double precioSeleccionado = precios.get(tamanoSeleccionado);
+                    if (precioSeleccionado != null) {
+                        precioLabel.setText(currencyFormatter.format(precioSeleccionado));
+                    }
+                }
+            });
+
+            // Movemos la etiqueta de precio aquí, antes del panel de opciones
+            productCard.add(precioLabel);
+            productCard.add(Box.createVerticalStrut(10)); // Espacio entre el precio y las opciones
+            // --- FIN DE CAMBIOS SOLICITADOS ---
+
             gbcOpciones.gridx = 0;
             gbcOpciones.gridy = 0;
-            gbcOpciones.fill = GridBagConstraints.HORIZONTAL;
             opcionesPanel.add(tamanoCombo, gbcOpciones);
-            
+
             JLabel cantLabel = new JLabel("Cant:");
-            cantLabel.setForeground(new Color(43, 43, 43));
             gbcOpciones.gridx = 1;
             gbcOpciones.gridy = 0;
             opcionesPanel.add(cantLabel, gbcOpciones);
